@@ -1,0 +1,225 @@
+{
+  "name": "AI agents for stocks research and analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9eb7347a-64ec-4c3d-b08b-56e33c912452",
+      "name": "When chat message received",
+      "webhookId": "cb4f6882-38c7-4f32-b323-711b9da326ab"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "187f1d23-a8a1-4e83-ba86-35bff4e770dd",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ir2mGc7BNL7jKBY8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        208
+      ],
+      "id": "a2044cf1-6ab9-4c1b-a617-365466b955d3",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Fetch real-time stock price data from Alpha Vantage. Use ticker symbols like AAPL, MSFT, TSLA, etc.",
+        "url": "=https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={{$fromAI('ticker','The stock ticker symbol, e.g. AAPL, MSFT, TSLA')}}&apikey=YOR73CLACFHIIWRT",
+        "options": {},
+        "optimizeResponse": true
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        208
+      ],
+      "id": "dca957af-d118-43f6-9015-e5e144ae4fc1",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        256
+      ],
+      "id": "7899ee38-5b60-4ad8-af76-f27be294f013",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ir2mGc7BNL7jKBY8",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Fetch real-time stock price data for Israeli stocks from Tel Aviv Stock Exchange (TASE). Use ticker symbols ending in .TA, e.g. TEVA.TA, NICE.TA, CHKP.TA",
+        "url": "=https://query1.finance.yahoo.com/v8/finance/chart/{{$fromAI('ticker','Israeli stock ticker ending in .TA, e.g. TEVA.TA, NICE.TA')}}?interval=1d&range=5d",
+        "options": {},
+        "optimizeResponse": true
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        512,
+        176
+      ],
+      "id": "c07c45a1-a9c3-4853-aa71-ab86017b4c1a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a financial research analyst. The user will ask you about a specific stock or asset.\n\nYour job is to:\n1. Use the HTTP tool to fetch real-time price data for the relevant ticker symbol\n2. Analyze the current price, change percentage, and recent trend\n3. Provide a clear outlook: Bullish / Bearish / Neutral with reasoning\n4. Give a concise investment insight suitable for a retail investor\n\nImportant: When using the tool, use standard ticker symbols (e.g. AAPL for Apple, MSFT for Microsoft, TSLA for Tesla).\n\nAlways respond in the same language the user writes in (Hebrew or English).\nBe professional, concise, and data-driven."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "eb0ed871-8447-45bd-8159-c74ddd1d8ebe",
+      "name": "Research Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Research Agent').item.json.output }}",
+        "options": {
+          "systemMessage": "You are a senior investment analyst. You will receive research data about a stock.\n\nFormat your response EXACTLY like this:\n\n📊 **[STOCK NAME] ([TICKER]) – Investment Analysis**\n\n💰 **Current Price:** $XXX | **Daily Change:** X.XX%\n\n---\n\n📈 **Trend:** [One sentence on recent price movement]\n\n🎯 **Recommendation:** BUY / HOLD / SELL\n\n📅 **30-Day Price Target:** $XXX\n\n---\n\n**🟢 Opportunities:**\n- [Point 1]\n- [Point 2]\n\n**🔴 Risks:**\n- [Point 1]\n- [Point 2]\n\n---\n\n⚡ **Executive Summary:** [One bold sentence for a busy investor]\n\n---\n\nAlways respond in the same language the user writes in (Hebrew or English).\nFor Israeli stocks (ending in .TA), prices are in ILS (₪) not USD."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "31f3b1e6-bbd7-4c7e-a904-c9d6a191db1f",
+      "name": "Analysis Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analysis Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Analysis Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7cb3f54a-bce8-44f8-aa63-e545276b0ac5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68a89241e96f4cd17bfbcc49245da84a7a3923737cd1e04c0532c3183060a23c"
+  },
+  "nodeGroups": [],
+  "id": "8FqAqNN92hBTSY0t",
+  "tags": []
+}
